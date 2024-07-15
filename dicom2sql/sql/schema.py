@@ -59,7 +59,7 @@ class Patient(Base):
     __tablename__ = "patient"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    patient_dicom_id: Mapped[str] = mapped_column(String(), unique=True, index=True)#TODO add size
+    patient_dicom_id: Mapped[str] = mapped_column(String(10), unique=True, index=True)
     patient_name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     birth_date: Mapped[datetime.date] 
     sex: Mapped[Optional[str]] = mapped_column(String(1))
@@ -86,8 +86,8 @@ class Study(Base):
 
     id: Mapped[int] = mapped_column( primary_key=True, init=False)
     study_instance_uid: Mapped[str] = mapped_column(String(64),unique=True, index=True) 
-    study_id: Mapped[str] = mapped_column(String(), index=True)#TODO size
-    accession_number: Mapped[str] = mapped_column(String(),unique=True, index=True)#TODO size
+    study_id: Mapped[str] = mapped_column(String(16), index=True)
+    accession_number: Mapped[str] = mapped_column(String(16),unique=True, index=True)
     study_datetime: Mapped[datetime.datetime] 
     modality: Mapped[str] = mapped_column(String(30))
     study_description: Mapped[str] = mapped_column(String(50))
