@@ -1,7 +1,6 @@
 from typing import List, Any
 from typing import Optional
 
-from pygments.lexer import default
 from sqlalchemy import ForeignKey
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase
