@@ -9,8 +9,8 @@ class ConfigFile:
         config_path = Path(user_config_dir(appname='dicom2sql', appauthor=False))
         config_path.mkdir(exist_ok=True)
         assert str(config_path) != '', 'Error getting user folder'
-        self.config_file = config_path / '_'.join([p for p in root.parts if p != '/'])
-        print()
+        root = root.resolve()
+        self.config_file = config_path / '_'.join(root[1:])
 
     def get_last_file(self) -> Path | None:
         if not self.config_file.exists():
