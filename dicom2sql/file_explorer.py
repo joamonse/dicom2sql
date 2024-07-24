@@ -10,7 +10,7 @@ class ConfigFile:
         config_path.mkdir(exist_ok=True)
         assert str(config_path) != '', 'Error getting user folder'
         root = root.resolve()
-        self.config_file = config_path / '_'.join(root[1:])
+        self.config_file = config_path / '_'.join(root.parts[1:])
 
     def get_last_file(self) -> Path | None:
         if not self.config_file.exists():
