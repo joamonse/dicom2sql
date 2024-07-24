@@ -155,7 +155,7 @@ class TagDescriptor(Base):
     __tablename__ = "tag_descriptor"
 
     id: Mapped[str] = mapped_column(String(25), primary_key=True)
-    description: Mapped[str] = mapped_column(String(50))
+    description: Mapped[str] = mapped_column(String(150))
 
     tags: Mapped[List["Tag"]] = relationship(
         back_populates="tag_descriptor", cascade="all, delete-orphan", default_factory=list
@@ -166,7 +166,7 @@ class Tag(Base):
     __tablename__ = "tag"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    value: Mapped[str] = mapped_column(String(50))
+    value: Mapped[str] = mapped_column(String(350))
     tag_id: Mapped[str] = mapped_column(ForeignKey("tag_descriptor.id"), init=False)
     series_id: Mapped[int] = mapped_column(ForeignKey("series.id"), init=False, index=True)
 
