@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Iterator
 from platformdirs import user_config_dir
-from itertools import islice
 
 
 class ConfigFile:
