@@ -60,9 +60,9 @@ class Patient(Base):
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     patient_dicom_id: Mapped[str] = mapped_column(String(10), unique=True, index=True)
     patient_name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
-    birth_date: Mapped[datetime.date] 
+    birth_date: Mapped[Optional[datetime.date]]
     sex: Mapped[Optional[str]] = mapped_column(String(1))
-    age: Mapped[Optional[int]]
+    age: Mapped[Optional[str]] = mapped_column(String(4))
     weight: Mapped[Optional[int]]
 
     studies: Mapped[List["Study"]] = relationship(
@@ -73,9 +73,9 @@ class Patient(Base):
         super().__init__(**kw)
         self.patient_dicom_id = str(dicom[tags_id["patient_dicom_id"]].value)
         self.patient_name = str(dicom[tags_id["patient_name"]].value)
-        self.birth_date = datetime.datetime.strptime(dicom[tags_id["birth_date"]].value, "%Y%m%d")
+        self.birth_date = datetime.datetime.strptime(dicom[tags_id["birth_date"]].value, "%Y%m%d") if tags_id["birth_date"] in dicom else None
         self.sex = str(dicom[tags_id["sex"]].value[0]) if tags_id["sex"] in dicom else None
-        self.age = dicom[tags_id["age"]].value if tags_id["sex"] in dicom else None
+        self.age = dicom[tags_id["age"]].value if tags_id["age"] in dicom else None
         self.weight = dicom[tags_id["weight"]].value if tags_id["weight"] in dicom else None
 
 
@@ -84,12 +84,12 @@ class Study(Base):
     __tablename__ = "study"
 
     id: Mapped[int] = mapped_column( primary_key=True, init=False)
-    study_instance_uid: Mapped[str] = mapped_column(String(64),unique=True, index=True) 
-    study_id: Mapped[str] = mapped_column(String(16), index=True)
-    accession_number: Mapped[str] = mapped_column(String(16),unique=True, index=True)
-    study_datetime: Mapped[datetime.datetime] 
-    modality: Mapped[str] = mapped_column(String(30))
-    study_description: Mapped[str] = mapped_column(String(50))
+    study_instance_uid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    study_id: Mapped[Optional[str]] = mapped_column(String(16), index=True)
+    accession_number: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    study_datetime: Mapped[Optional[datetime.datetime]]
+    modality: Mapped[Optional[str]] = mapped_column(String(30))
+    study_description: Mapped[Optional[str]] = mapped_column(String(50))
     community: Mapped[str] = mapped_column(String(25))
     hospital: Mapped[str] = mapped_column(String(25))
     patient_id: Mapped[int] = mapped_column(ForeignKey("patient.id"), init=False)
@@ -107,14 +107,13 @@ class Study(Base):
     def __init__(self, dicom: Dataset, community: str, **kw: Any):
         super().__init__(**kw)
         self.study_instance_uid = str(dicom[tags_id["study_instance_uid"]].value)
-        self.study_id = str(dicom[tags_id["study_id"]].value)
+        self.study_id = str(dicom[tags_id["study_id"]].value) if tags_id["study_id"] in dicom else None
         self.accession_number = str(dicom[tags_id["accession_number"]].value)
-        self.study_datetime = convert_datetime(dicom[tags_id["study_date"]].value,dicom[tags_id["study_time"]].value)
-        self.modality = str(dicom[tags_id["modality"]].value)
-        self.study_description = str(dicom[tags_id["study_description"]].value)
+        self.study_datetime = convert_datetime(dicom[tags_id["study_date"]].value,dicom[tags_id["study_time"]].value) if tags_id["study_date"] in dicom else None
+        self.modality = str(dicom[tags_id["modality"]].value) if tags_id["modality"] in dicom else None
+        self.study_description = str(dicom[tags_id["study_description"]].value) if tags_id["study_description"] in dicom else None
         self.community = community
         self.hospital = self.accession_number[0:5]
-
 
 
 class Report(Base):
@@ -132,7 +131,7 @@ class Series(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     series_instance_uid: Mapped[str] = mapped_column(String(64), index=True)
-    series_description: Mapped[str] = mapped_column(String(50))
+    series_description: Mapped[Optional[str]] = mapped_column(String(50))
     study_id: Mapped[int] = mapped_column(ForeignKey("study.id"))
 
     study: Mapped["Study"] = relationship(back_populates="series", default=None)
@@ -148,7 +147,7 @@ class Series(Base):
     def __init__(self, dicom: Dataset, **kw: Any):
         super().__init__(**kw)
         self.series_instance_uid = str(dicom[tags_id["series_instance_uid"]].value)
-        self.series_description = str(dicom[tags_id["series_description"]].value)
+        self.series_description = str(dicom[tags_id["series_description"]].value) if tags_id["series_description"] in dicom else None
 
 
 class TagDescriptor(Base):
