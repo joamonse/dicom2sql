@@ -1,8 +1,11 @@
 import pydicom
 
 from typing import TypedDict, List
-def DicomTagDict(TypedDict):
-    TAGS:str
+
+
+class DicomTagDict(TypedDict):
+    TAGS: str
+
 
 class DicomExtractor:
     def __init__(self, tags: List[DicomTagDict]):
