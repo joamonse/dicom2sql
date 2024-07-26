@@ -1,5 +1,7 @@
 import logging
 import argparse
+import os
+from time import strftime, gmtime
 
 import pydicom
 from pydicom.errors import InvalidDicomError
@@ -12,7 +14,7 @@ import csv
 from pathlib import Path
 
 
-def upload_tags_description(csv_path:str, db: Database):
+def upload_tags_description(csv_path: str, db: Database):
     with open(csv_path) as csvfile:
         reader = csv.DictReader(csvfile, delimiter="\t")
         rows = []
@@ -24,7 +26,8 @@ def upload_tags_description(csv_path:str, db: Database):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', level=logging.WARNING,
+                        filename=Path(os.getcwd()) / f'{strftime("%Y-%m-%d %H:%M:%S", gmtime())}.log', filemode='a')
     logger = logging.getLogger(__name__)
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
@@ -54,7 +57,10 @@ if __name__ == '__main__':
                 continue
 
             community = folder
-            db.insert(dcm_data, str(community), str(file))
+            try:
+                db.insert(dcm_data, str(community), str(file))
+            except KeyError as e:
+                logger.error(f'missing tag {e.args[0]} in file {file}')
 
 
 
