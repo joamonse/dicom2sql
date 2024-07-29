@@ -140,7 +140,7 @@ class Series(Base):
         back_populates="series", cascade="all, delete-orphan", default_factory=list
     )
     
-    files: Mapped[List["File"]] = relationship(
+    paths: Mapped[List["Path"]] = relationship(
         back_populates="series", cascade="all, delete-orphan", default_factory=list
     )
 
@@ -174,7 +174,7 @@ class Tag(Base):
     series: Mapped["Series"] = relationship(back_populates="tags", default=None)
 
 
-class File(Base):
+class Path(Base):
     __tablename__ = "file"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
