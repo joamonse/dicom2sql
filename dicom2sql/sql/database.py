@@ -4,7 +4,7 @@ from sqlalchemy import select
 
 from typing import TypedDict, List, NotRequired
 
-from .schema import TagDescriptor, Patient, Study, Series, tags_id, File, Base, Tag
+from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag
 
 from pydicom.dataset import Dataset
 
@@ -83,7 +83,7 @@ class Database:
                 existing_tags[tag_to_insert["tag"]].append(str(data[tag_to_insert["tag"]].value))
 
             file_uri = Path(uri)
-            file = File(filename=file_uri.name, filepath=str(file_uri.parent), size=file_uri.stat().st_size)
+            file = FileInfo(filename=file_uri.name, filepath=str(file_uri.parent), size=file_uri.stat().st_size)
             file.series = series
 
             session.add(file)
