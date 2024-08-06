@@ -86,7 +86,7 @@ class Database:
                 existing_tags[tag_to_insert["tag"]].append(str(data[tag_to_insert["tag"]].value))
 
             if tags_id["dicom_sr"] in data:
-                json_data = data.to_json()[tags_id["dicom_sr"]]
+                json_data = data.to_json_dict()[tags_id["dicom_sr"]]
                 pretty_json_str = pprint.pformat(json_data, compact=True).replace("'", '"')
                 report = Report(text=pretty_json_str)
                 report.study = study
