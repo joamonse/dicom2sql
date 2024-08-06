@@ -18,7 +18,6 @@ import datetime
 
 
 def convert_datetime(date:str, time:str):
-    print(date, time)
     date_obj = datetime.datetime.strptime(date, "%Y%m%d")
 
     if '.' in time:
