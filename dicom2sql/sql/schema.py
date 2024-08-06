@@ -1,7 +1,7 @@
 from typing import List, Any
 from typing import Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Text
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import MappedAsDataclass
@@ -120,7 +120,7 @@ class Report(Base):
     __tablename__ = "report"
 
     id: Mapped[int] = mapped_column( primary_key=True, init=False)
-    text: Mapped[str] = mapped_column(String(255))
+    text: Mapped[str] = mapped_column(Text)
     study_id: Mapped[int] = mapped_column(ForeignKey("study.id"), init=False, index=True)
 
     study: Mapped["Study"] = relationship(back_populates="reports", default=None)
