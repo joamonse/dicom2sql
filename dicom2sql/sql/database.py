@@ -1,10 +1,13 @@
+import json
+import pprint
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
 from typing import TypedDict, List, NotRequired
 
-from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag
+from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report
 
 from pydicom.dataset import Dataset
 
@@ -81,6 +84,13 @@ class Database:
                 tag.tag_descriptor = tag_to_insert["tag_object"]
                 series.tags.append(tag)
                 existing_tags[tag_to_insert["tag"]].append(str(data[tag_to_insert["tag"]].value))
+
+            if tags_id["dicom_sr"] in data:
+                json_data = data.to_json()[tags_id["dicom_sr"]]
+                pretty_json_str = pprint.pformat(json_data, compact=True).replace("'", '"')
+                report = Report(text=pretty_json_str)
+                report.study = study
+                session.add(report)
 
             file_uri = Path(uri)
             file = FileInfo(filename=file_uri.name, filepath=str(file_uri.parent), size=file_uri.stat().st_size)

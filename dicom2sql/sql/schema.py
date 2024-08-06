@@ -46,7 +46,8 @@ tags_id: dict = {
         "modality": "00080060",
         "study_description": "00081030",
         "series_instance_uid": "0020000E",
-        "series_description": "0008103E"
+        "series_description": "0008103E",
+        "dicom_sr": "0040a730"
 }
 
 
@@ -77,7 +78,6 @@ class Patient(Base):
         self.sex = str(dicom[tags_id["sex"]].value[0]) if tags_id["sex"] in dicom else None
         self.age = dicom[tags_id["age"]].value if tags_id["age"] in dicom else None
         self.weight = dicom[tags_id["weight"]].value if tags_id["weight"] in dicom else None
-
 
 
 class Study(Base):
