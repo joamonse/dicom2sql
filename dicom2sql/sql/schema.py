@@ -85,7 +85,7 @@ class Study(Base):
     id: Mapped[int] = mapped_column( primary_key=True, init=False)
     study_instance_uid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     study_id: Mapped[Optional[str]] = mapped_column(String(16), index=True)
-    accession_number: Mapped[str] = mapped_column(String(16), unique=True, index=True)
+    accession_number: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     study_datetime: Mapped[Optional[datetime.datetime]]
     modality: Mapped[Optional[str]] = mapped_column(String(30))
     study_description: Mapped[Optional[str]] = mapped_column(String(50))
