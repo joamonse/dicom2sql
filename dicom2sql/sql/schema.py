@@ -1,3 +1,4 @@
+import logging
 from typing import List, Any
 from typing import Optional
 
@@ -18,15 +19,22 @@ import datetime
 
 
 def convert_datetime(date:str, time:str):
-    date_obj = datetime.datetime.strptime(date, "%Y%m%d")
+    try:
+        date_obj = datetime.datetime.strptime(date, "%Y%m%d")
+    except ValueError:
+        date_obj = datetime.datetime.fromtimestamp(0).date()
+        logging.getLogger(__name__).error(f"date {date} is in incorrect format, inserting {date_obj} instead")
 
-    if '.' in time:
-        time_obj = datetime.datetime.strptime(time, "%H%M%S.%f").time()
-    else:
-        time_obj = datetime.datetime.strptime(time, "%H%M%S").time()
+    try:
+        if '.' in time:
+            time_obj = datetime.datetime.strptime(time, "%H%M%S.%f").time()
+        else:
+            time_obj = datetime.datetime.strptime(time, "%H%M%S").time()
+    except ValueError:
+        time_obj = datetime.datetime.fromtimestamp(0).time()
+        logging.getLogger(__name__).error(f"time {time} is in incorrect format, inserting {time_obj} instead")
 
     datetime_obj = datetime.datetime.combine(date_obj, time_obj)
-
     return datetime_obj
 
 
