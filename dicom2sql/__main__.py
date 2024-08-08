@@ -4,6 +4,7 @@ import os
 from time import strftime, gmtime
 
 import pydicom
+import sqlalchemy
 from pydicom.errors import InvalidDicomError
 
 from sql.database import Database
@@ -61,6 +62,8 @@ if __name__ == '__main__':
                 db.insert(dcm_data, str(community), str(file))
             except KeyError as e:
                 logger.error(f'missing tag {e.args[0]} in file {file}')
+            except sqlalchemy.exc.ProgrammingError as e:
+                logger.error(f'exception occurred while inserting file {file}: {e}')
 
 
 
