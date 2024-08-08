@@ -9,7 +9,9 @@ class ConfigFile:
         config_path.mkdir(exist_ok=True)
         assert str(config_path) != '', 'Error getting user folder'
         root = root.resolve()
-        self.config_file = config_path / '_'.join([root.parts[0].replace('/', '_').replace('\\', '_'), *root.parts[1:]])
+        self.config_file = config_path / '_'.join(['root' + root.parts[0].replace('/', '_')
+                                                  .replace('\\', '_')
+                                                  .replace(':', '_'), *root.parts[1:]])
 
     def get_last_file(self) -> Path | None:
         if not self.config_file.exists():
@@ -18,7 +20,7 @@ class ConfigFile:
         with self.config_file.open() as f:
             return Path(f.read())
 
-    def set_last_file(self, file:Path) -> None:
+    def set_last_file(self, file: Path) -> None:
         with self.config_file.open('w') as f:
             f.write(str(file))
 
@@ -26,7 +28,7 @@ class ConfigFile:
         self.config_file.unlink(missing_ok=True)
 
 
-def get_files(root:Path) -> Iterator[Path]:
+def get_files(root: Path) -> Iterator[Path]:
     config_file = ConfigFile(root)
 
     last_file = config_file.get_last_file()
@@ -45,7 +47,7 @@ def get_files(root:Path) -> Iterator[Path]:
 
         next_files = sorted(list(current_file.iterdir()), key=str)
         searched_files = next_files + searched_files
-        
+
     config_file.remove()
 
 
@@ -55,6 +57,6 @@ def generate_directory_list(last_file: Path, root: Path):
         parent = last_file.parent
         next_files = sorted(list(parent.iterdir()), key=str)
         index = next_files.index(last_file)
-        files += next_files[index+1:]
+        files += next_files[index + 1:]
         last_file = parent
     return files
