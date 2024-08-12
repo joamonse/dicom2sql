@@ -161,7 +161,7 @@ class TagDescriptor(Base):
     __tablename__ = "tag_descriptor"
 
     id: Mapped[str] = mapped_column(String(25), primary_key=True)
-    name: Mapped[str] = mapped_column(String(25))
+    name: Mapped[str] = mapped_column(String(40))
     description: Mapped[str] = mapped_column(String(300))
 
     tags: Mapped[List["Tag"]] = relationship(
