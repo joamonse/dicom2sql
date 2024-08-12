@@ -67,7 +67,7 @@ class Patient(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     patient_dicom_id: Mapped[str] = mapped_column(String(10), unique=True, index=True)
-    patient_name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    patient_name: Mapped[str] = mapped_column(String(50), index=True)
     birth_date: Mapped[Optional[datetime.date]]
     sex: Mapped[Optional[str]] = mapped_column(String(1))
     age: Mapped[Optional[str]] = mapped_column(String(4))
@@ -138,7 +138,7 @@ class Series(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
     series_instance_uid: Mapped[str] = mapped_column(String(64), index=True)
-    series_description: Mapped[Optional[str]] = mapped_column(String(50))
+    series_description: Mapped[Optional[str]] = mapped_column(String(75))
     study_id: Mapped[int] = mapped_column(ForeignKey("study.id"))
 
     study: Mapped["Study"] = relationship(back_populates="series", default=None)
@@ -161,6 +161,7 @@ class TagDescriptor(Base):
     __tablename__ = "tag_descriptor"
 
     id: Mapped[str] = mapped_column(String(25), primary_key=True)
+    name: Mapped[str] = mapped_column(String(25), primary_key=True)
     description: Mapped[str] = mapped_column(String(150))
 
     tags: Mapped[List["Tag"]] = relationship(
@@ -172,7 +173,7 @@ class Tag(Base):
     __tablename__ = "tag"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    value: Mapped[str] = mapped_column(String(350))
+    value: Mapped[str] = mapped_column(String(450))
     tag_id: Mapped[str] = mapped_column(ForeignKey("tag_descriptor.id"), init=False)
     series_id: Mapped[int] = mapped_column(ForeignKey("series.id"), init=False, index=True)
 

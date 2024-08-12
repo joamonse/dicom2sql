@@ -20,6 +20,7 @@ import logging
 class DicomTagDict(TypedDict):
     tag: str
     tag_description: str
+    name: str
     tag_object: NotRequired[TagDescriptor]
 
 
@@ -109,7 +110,7 @@ class Database:
         tag_list = [t for t in tag_list if not t['tag'] in set(tags_id.items())]
         with self.session_factory() as sess:
             for t in tag_list:
-                tag = TagDescriptor(id=t['tag'], description=t['tag_description'])
+                tag = TagDescriptor(id=t['tag'], name=t['name'], description=t['tag_description'])
                 sess.add(tag)
             sess.commit()
         self._is_tags_dirty = True
