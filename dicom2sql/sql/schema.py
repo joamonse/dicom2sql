@@ -162,7 +162,7 @@ class TagDescriptor(Base):
 
     id: Mapped[str] = mapped_column(String(25), primary_key=True)
     name: Mapped[str] = mapped_column(String(25))
-    description: Mapped[str] = mapped_column(String(150))
+    description: Mapped[str] = mapped_column(String(250))
 
     tags: Mapped[List["Tag"]] = relationship(
         back_populates="tag_descriptor", cascade="all, delete-orphan", default_factory=list
