@@ -45,7 +45,7 @@ def get_files(root: Path) -> Iterator[Path]:
             yield current_file
             continue
 
-        next_files = sorted(list(current_file.iterdir()), key=str)
+        next_files = sorted(list(current_file.iterdir()), key=str, reverse=True)
         searched_files = next_files + searched_files
 
     config_file.remove()
@@ -55,7 +55,7 @@ def generate_directory_list(last_file: Path, root: Path):
     files = [last_file]
     while last_file != root:
         parent = last_file.parent
-        next_files = sorted(list(parent.iterdir()), key=str)
+        next_files = sorted(list(parent.iterdir()), key=str, reverse=True)
         index = next_files.index(last_file)
         files += next_files[index + 1:]
         last_file = parent
