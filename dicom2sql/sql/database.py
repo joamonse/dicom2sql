@@ -1,5 +1,4 @@
 import json
-import pprint
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -88,8 +87,7 @@ class Database:
 
             if tags_id["dicom_sr"] in data:
                 json_data = data.to_json_dict()[tags_id["dicom_sr"]]
-                pretty_json_str = pprint.pformat(json_data, compact=True).replace("'", '"')
-                report = Report(text=pretty_json_str)
+                report = Report(text=json.dumps(json_data))
                 report.study = study
                 session.add(report)
 
