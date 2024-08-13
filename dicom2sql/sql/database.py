@@ -82,6 +82,7 @@ class Database:
 
                 tag = Tag(value=str(data[tag_to_insert["tag"]].value))
                 tag.tag_descriptor = tag_to_insert["tag_object"]
+                session.add(tag)
                 series.tags.append(tag)
                 existing_tags[tag_to_insert["tag"]].append(str(data[tag_to_insert["tag"]].value))
 
