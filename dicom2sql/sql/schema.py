@@ -173,7 +173,7 @@ class Tag(Base):
     __tablename__ = "tag"
 
     id: Mapped[int] = mapped_column(primary_key=True, init=False)
-    value: Mapped[str] = mapped_column(String(450))
+    value: Mapped[str] = mapped_column(String(8000))
     tag_id: Mapped[str] = mapped_column(ForeignKey("tag_descriptor.id"), init=False)
     series_id: Mapped[int] = mapped_column(ForeignKey("series.id"), init=False, index=True)
 
