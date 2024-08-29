@@ -49,7 +49,7 @@ if __name__ == '__main__':
     for folder in folders:
         for file in get_files(folder):
             try:
-                dcm_data = pydicom.dcmread(file)
+                dcm_data = pydicom.dcmread(file, stop_before_pixels=True)
             except InvalidDicomError:
                 logger.error(f'{file} contains error or is not a dicom')
                 continue
