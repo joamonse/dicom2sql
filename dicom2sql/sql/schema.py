@@ -81,7 +81,11 @@ class Patient(Base):
         super().__init__(**kw)
         self.patient_dicom_id = str(dicom[tags_id["patient_dicom_id"]].value)
         self.patient_name = str(dicom[tags_id["patient_name"]].value)
-        self.birth_date = datetime.datetime.strptime(dicom[tags_id["birth_date"]].value, "%Y%m%d") if tags_id["birth_date"] in dicom else None
+        try:
+            self.birth_date = datetime.datetime.strptime(dicom[tags_id["birth_date"]].value, "%Y%m%d") if tags_id["birth_date"] in dicom else None
+        except ValueError:
+            self.birth_date = datetime.datetime.fromtimestamp(0).date()
+            logging.getLogger(__name__).error(f"date {dicom[tags_id["birth_date"]].value} is in incorrect format, inserting {self.birth_date} instead")
         self.sex = str(dicom[tags_id["sex"]].value[0]) if tags_id["sex"] in dicom else None
         self.age = dicom[tags_id["age"]].value if tags_id["age"] in dicom else None
         self.weight = dicom[tags_id["weight"]].value if tags_id["weight"] in dicom else None
