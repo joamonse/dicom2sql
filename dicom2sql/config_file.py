@@ -12,14 +12,14 @@ class ConfigFile:
                                                   .replace('\\', '_')
                                                   .replace(':', '_'), *root.parts[1:]])
 
-    def get_last_file(self) -> Path | None:
+    def get_last_file(self) -> Path | int | None:
         if not self.config_file.exists():
             return None
 
         with self.config_file.open() as f:
             return Path(f.read())
 
-    def set_last_file(self, file: Path) -> None:
+    def set_last_file(self, file: Path | int) -> None:
         with self.config_file.open('w') as f:
             f.write(str(file))
 
