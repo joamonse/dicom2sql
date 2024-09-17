@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Iterator
+from typing import Generator
 
 from dicom2sql.config_file import ConfigFile
 
 
-def get_files(root: Path) -> Iterator[Path]:
+def get_files(root: Path) -> Generator[Path]:
     config_file = ConfigFile(root)
 
     last_file = config_file.get_last_file()
