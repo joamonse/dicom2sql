@@ -17,7 +17,11 @@ class ConfigFile:
             return None
 
         with self.config_file.open() as f:
-            return Path(f.read())
+            value = f.read()
+        try:
+            return int(value)
+        except ValueError:
+            return Path()
 
     def set_last_file(self, file: Path | int) -> None:
         with self.config_file.open('w') as f:
