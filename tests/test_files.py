@@ -7,13 +7,14 @@ from pathlib import Path
 class TestFiles(unittest.TestCase):
     def test_config(self):
         config_file = ConfigFile(Path('test'))
-        self.assertEqual(config_file.get_last_file(), None)
+        with config_file:
+            self.assertEqual(config_file.get_last_file(), None)
 
-        config_file.set_last_file(Path('/etc/'))
-        self.assertEqual(config_file.get_last_file(), Path('/etc'))
-        self.assertEqual(config_file.get_last_file(), Path('/etc/'))
-        self.assertNotEqual(config_file.get_last_file(), Path('/etc/lib'))
-        self.assertNotEqual(config_file.get_last_file(), Path('/home/'))
+            config_file.set_last_file(Path('/etc/'))
+            self.assertEqual(config_file.get_last_file(), Path('/etc'))
+            self.assertEqual(config_file.get_last_file(), Path('/etc/'))
+            self.assertNotEqual(config_file.get_last_file(), Path('/etc/lib'))
+            self.assertNotEqual(config_file.get_last_file(), Path('/home/'))
 
         config_file.remove()
         self.assertEqual(config_file.get_last_file(), None)
