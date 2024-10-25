@@ -4,25 +4,25 @@ from typing import Generator
 from dicom2sql.config_file import ConfigFile
 
 
-def get_files(root: Path) -> Generator[Path]:
+def get_files(root: Path) -> Generator[Path, None, None]:
     config_file = ConfigFile(root)
+    with config_file:
+        last_file = config_file.get_last_file()
+        if last_file:
+            searched_files = generate_directory_list(last_file, root)
+        else:
+            searched_files = [root]
 
-    last_file = config_file.get_last_file()
-    if last_file:
-        searched_files = generate_directory_list(last_file, root)
-    else:
-        searched_files = [root]
+        while len(searched_files) > 0:
+            current_file = searched_files.pop(0)
 
-    while len(searched_files) > 0:
-        current_file = searched_files.pop(0)
+            if current_file.is_file():
+                config_file.set_last_file(current_file)
+                yield current_file
+                continue
 
-        if current_file.is_file():
-            config_file.set_last_file(current_file)
-            yield current_file
-            continue
-
-        next_files = sorted(list(current_file.iterdir()), key=str, reverse=True)
-        searched_files = next_files + searched_files
+            next_files = sorted(list(current_file.iterdir()), key=str, reverse=True)
+            searched_files = next_files + searched_files
 
     config_file.remove()
 
