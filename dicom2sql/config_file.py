@@ -1,4 +1,6 @@
 from pathlib import Path
+from types import TracebackType
+
 from platformdirs import user_config_dir
 
 
@@ -12,6 +14,15 @@ class ConfigFile:
                                                   .replace('\\', '_')
                                                   .replace(':', '_'), *root.parts[1:]])
 
+    def __enter__(self) -> None:
+        self.file = self.config_file.open('w')
+
+    def __exit__(self, exc_type: type[BaseException] | None,
+                 exc_val: BaseException | None,
+                 exc_tb: TracebackType | None
+                 ) -> None:
+        self.file.close()
+
     def get_last_file(self) -> Path | int | None:
         if not self.config_file.exists():
             return None
@@ -24,8 +35,11 @@ class ConfigFile:
             return Path()
 
     def set_last_file(self, file: Path | int) -> None:
-        with self.config_file.open('w') as f:
-            f.write(str(file))
+        self.file.seek(0)
+        self.file.truncate()
+        self.file.write(str(file) + "\n")
+        # Force a write to disk to keep the file up-to-date in case of a crash
+        self.file.flush()
 
     def remove(self) -> None:
         self.config_file.unlink(missing_ok=True)
