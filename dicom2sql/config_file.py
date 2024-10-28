@@ -15,7 +15,7 @@ class ConfigFile:
                                                   .replace(':', '_'), *root.parts[1:]])
 
     def __enter__(self) -> None:
-        self.file = self.config_file.open('w')
+        self.file = self.config_file.open('a+')
 
     def __exit__(self, exc_type: type[BaseException] | None,
                  exc_val: BaseException | None,
@@ -27,12 +27,16 @@ class ConfigFile:
         if not self.config_file.exists():
             return None
 
-        with self.config_file.open() as f:
-            value = f.read()
+        self.file.seek(0)
+        value = self.file.read().strip()
+
+        if value == "":
+            return None
+
         try:
             return int(value)
         except ValueError:
-            return Path()
+            return Path(value)
 
     def set_last_file(self, file: Path | int) -> None:
         self.file.seek(0)
