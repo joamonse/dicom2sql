@@ -59,7 +59,7 @@ if __name__ == '__main__':
                 logger.warning(f'{file} is not dicom')
                 continue
 
-            community = folder
+            community = path
             try:
                 db.insert(dcm_data, str(community), str(file))
             except KeyError as e:
