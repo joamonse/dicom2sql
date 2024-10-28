@@ -7,6 +7,7 @@ from pathlib import Path
 class TestFiles(unittest.TestCase):
     def test_config(self):
         config_file = ConfigFile(Path('test'))
+        config_file.remove()
         with config_file:
             self.assertEqual(config_file.get_last_file(), None)
 
