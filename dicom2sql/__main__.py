@@ -48,7 +48,7 @@ if __name__ == '__main__':
     inputs = list(map(lambda p: Path(p), args.paths))
 
     for path in inputs:
-        file_generator = get_files(path) if path.is_file() else get_files_from_list(path)
+        file_generator = get_files_from_list(path) if path.is_file() else get_files(path)
         for file in file_generator:
             try:
                 dcm_data = pydicom.dcmread(file, stop_before_pixels=True)
