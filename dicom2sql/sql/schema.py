@@ -102,7 +102,7 @@ class Study(Base):
     __tablename__ = "study"
 
     id: Mapped[int] = mapped_column( primary_key=True, init=False)
-    study_instance_uid: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    study_instance_uid: Mapped[str] = mapped_column(String(64))
     study_id: Mapped[Optional[str]] = mapped_column(String(16), index=True)
     accession_number: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     study_datetime: Mapped[Optional[datetime.datetime]]
