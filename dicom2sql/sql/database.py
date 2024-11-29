@@ -48,6 +48,8 @@ class Database:
             project = session.execute(select_statement).scalars().first()
             if not project:
                 project = Project(name=project_name)
+                session.add(project)
+                session.commit()
 
             return project
 
