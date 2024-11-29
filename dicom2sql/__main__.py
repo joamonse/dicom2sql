@@ -29,12 +29,13 @@ def upload_tags_description(csv_path: str, db: Database):
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', level=logging.WARNING,
-                        filename=Path(os.getcwd()) / f'{strftime("%Y-%m-%d %H:%M:%S", gmtime())}.log', filemode='a')
+                        filename=Path(os.getcwd()) / f'{strftime("%Y-%m-%d_%H-%M-%S", gmtime())}.log', filemode='a')
     logger = logging.getLogger(__name__)
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
     parser = argparse.ArgumentParser(description='Run a dicom node that upload recied dicom\'s tags to a mongo database',prog='dicom2mongo')
     parser.add_argument('--init_db', default='', help='path to csv file containing the tags to upload')
+    parser.add_argument('--project', default='', help='project to be assigned to the series')
     parser.add_argument('db_url', help='Database name')
     parser.add_argument('paths', help='Paths to folders containing the dicom files', nargs='*')
 
@@ -45,11 +46,16 @@ if __name__ == '__main__':
     if args.init_db != '':
         upload_tags_description(args.init_db, db)
 
+    project = None
+    if args.project != '':
+        project = db.get_or_create_project(args.project)
+
     inputs = list(map(lambda p: Path(p), args.paths))
 
     for path in inputs:
         file_generator = get_files_from_list(path) if path.is_file() else get_files(path)
         for file in file_generator:
+            print(file)
             try:
                 dcm_data = pydicom.dcmread(file, stop_before_pixels=True)
             except InvalidDicomError:
@@ -61,7 +67,7 @@ if __name__ == '__main__':
 
             community = path
             try:
-                db.insert(dcm_data, str(community), str(file))
+                db.insert(dcm_data, str(community), str(file), project)
             except KeyError as e:
                 logger.error(f'missing tag {e.args[0]} in file {file}')
             except sqlalchemy.exc.ProgrammingError as e:

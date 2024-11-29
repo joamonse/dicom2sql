@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from typing import TypedDict, List, NotRequired
 
-from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report
+from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report, Project
 
 from pydicom.dataset import Dataset
 
@@ -42,7 +42,16 @@ class Database:
                 or data[tags_id["patient_dicom_id"]].value is None
                 )
 
-    def insert(self, data: Dataset, community: str, uri: str) -> None:
+    def get_or_create_project(self, project_name:str) -> Project:
+        with self.session_factory() as session:
+            select_statement = select(Project).where(Project.name == project_name)
+            project = session.execute(select_statement).scalars().first()
+            if not project:
+                project = Project(name=project_name)
+
+            return project
+
+    def insert(self, data: Dataset, community: str, uri: str, project:Project=None) -> None:
         logger = logging.getLogger(__name__)
         if self.check_identifiers(data):
             logger.warning(f'File {uri} could not be processed. Accession number or patient id is null')
@@ -67,6 +76,10 @@ class Database:
                 series = Series(data)
                 series.study = study
                 session.add(series)
+
+            if project and project not in series.projects:
+                series.projects.append(project)
+
 
             existing_tags = defaultdict(list)
             for t in series.tags:

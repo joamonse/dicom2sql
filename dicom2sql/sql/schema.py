@@ -2,7 +2,7 @@ import logging
 from typing import List, Any
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Text
+from sqlalchemy import ForeignKey, Text, Table, Column
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import MappedAsDataclass
@@ -61,6 +61,13 @@ tags_id: dict = {
 class Base(MappedAsDataclass, DeclarativeBase):
     pass
 
+
+series_project = Table(
+    "series_project",
+    Base.metadata,
+    Column("project_id", ForeignKey("project.id"), primary_key=True),
+    Column("series_id", ForeignKey("series.id"), primary_key=True),
+)
 
 class Patient(Base):
     __tablename__ = "patient"
@@ -155,6 +162,10 @@ class Series(Base):
         back_populates="series", cascade="all, delete-orphan", default_factory=list
     )
 
+    projects: Mapped[List["Project"]] = relationship(
+        secondary=series_project, back_populates="series",  default_factory=list
+    )
+
     def __init__(self, dicom: Dataset, **kw: Any):
         super().__init__(**kw)
         self.series_instance_uid = str(dicom[tags_id["series_instance_uid"]].value)
@@ -196,6 +207,19 @@ class FileInfo(Base):
     series_id: Mapped[int] = mapped_column(ForeignKey("series.id"), init=False, index=True)
 
     series: Mapped["Series"] = relationship(back_populates="files", default=None)
+
+
+class Project(Base):
+    __tablename__ = "project"
+
+    id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    alt_name: Mapped[Optional[str]] = mapped_column(String(50), init=False)
+    notes: Mapped[Optional[str]] = mapped_column(String(255),init=False)
+
+    series: Mapped[List["Series"]] = relationship(
+        secondary=series_project, back_populates="projects", default_factory=list
+    )
 
 
 
