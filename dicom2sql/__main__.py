@@ -64,6 +64,9 @@ if __name__ == '__main__':
             except TypeError:
                 logger.warning(f'{file} is not dicom')
                 continue
+            except FileNotFoundError:
+                logger.warning(f'{file} does not exist')
+                continue
 
             community = path
             try:
