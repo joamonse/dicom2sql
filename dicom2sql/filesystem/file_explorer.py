@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import Generator
 
 from dicom2sql.config_file import ConfigFile
+from .dcmfile import DcmFile
 
 
-def get_files(root: Path) -> Generator[Path, None, None]:
+def get_files(root: Path) -> Generator[DcmFile, None, None]:
     config_file = ConfigFile(root)
     with config_file:
         last_file = config_file.get_last_file()
@@ -17,8 +18,8 @@ def get_files(root: Path) -> Generator[Path, None, None]:
             current_file = searched_files.pop(0)
 
             if current_file.is_file():
-                config_file.set_last_file(current_file)
-                yield current_file
+                context = DcmFile(config_file, current_file)
+                yield context
                 continue
 
             next_files = sorted(list(current_file.iterdir()), key=str, reverse=True)

@@ -42,8 +42,9 @@ class Database:
                 or data[tags_id["patient_dicom_id"]].value is None
                 )
 
-    def get_or_create_project(self, project_name:str) -> Project:
+    def get_or_create_project(self, project_name:str) -> int:
         with self.session_factory() as session:
+            session.expire_on_commit = False
             select_statement = select(Project).where(Project.name == project_name)
             project = session.execute(select_statement).scalars().first()
             if not project:
@@ -51,14 +52,15 @@ class Database:
                 session.add(project)
                 session.commit()
 
-            return project
+            return project.id
 
-    def insert(self, data: Dataset, community: str, uri: str, project:Project=None) -> None:
+    def insert(self, data: Dataset, community: str, uri: str, project_id:int=None) -> None:
         logger = logging.getLogger(__name__)
         if self.check_identifiers(data):
             logger.warning(f'File {uri} could not be processed. Accession number or patient id is null')
             return
         with self.session_factory() as session:
+
             select_statement = select(Patient).where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value)
             patient = session.execute(select_statement).scalars().first()
             if not patient:
@@ -79,8 +81,11 @@ class Database:
                 series.study = study
                 session.add(series)
 
-            if project and project not in series.projects:
-                series.projects.append(project)
+            if project_id:
+                select_statement = select(Project).where(Project.id == project_id)
+                project = session.execute(select_statement).scalars().first()
+                if project not in series.projects:
+                    series.projects.append(project)
 
 
             existing_tags = defaultdict(list)

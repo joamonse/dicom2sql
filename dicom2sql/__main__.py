@@ -7,9 +7,9 @@ import pydicom
 import sqlalchemy
 from pydicom.errors import InvalidDicomError
 
-from dicom2sql.file_lister import get_files_from_list
+from dicom2sql.filesystem.file_lister import get_files_from_list
 from sql.database import Database
-from file_explorer import get_files
+from dicom2sql.filesystem.file_explorer import get_files
 
 import csv
 
@@ -55,26 +55,27 @@ if __name__ == '__main__':
     for path in inputs:
         file_generator = get_files_from_list(path) if path.is_file() else get_files(path)
         for file in file_generator:
-            print(file)
-            try:
-                dcm_data = pydicom.dcmread(file, stop_before_pixels=True)
-            except InvalidDicomError:
-                logger.error(f'{file} contains error or is not a dicom')
-                continue
-            except TypeError:
-                logger.warning(f'{file} is not dicom')
-                continue
-            except FileNotFoundError:
-                logger.warning(f'{file} does not exist')
-                continue
+            with file:
+                print(file)
+                try:
+                    dcm_data = pydicom.dcmread(file.path, stop_before_pixels=True)
+                except InvalidDicomError:
+                    logger.error(f'{file} contains error or is not a dicom')
+                    continue
+                except TypeError:
+                    logger.warning(f'{file} is not dicom')
+                    continue
+                except FileNotFoundError:
+                    logger.warning(f'{file} does not exist')
+                    continue
 
-            community = path
-            try:
-                db.insert(dcm_data, str(community), str(file), project)
-            except KeyError as e:
-                logger.error(f'missing tag {e.args[0]} in file {file}')
-            except sqlalchemy.exc.ProgrammingError as e:
-                logger.error(f'exception occurred while inserting file {file}: {e}')
+                community = path
+                try:
+                    db.insert(dcm_data, str(community), str(file.path), project)
+                except KeyError as e:
+                    logger.error(f'missing tag {e.args[0]} in file {file}')
+                except sqlalchemy.exc.ProgrammingError as e:
+                    logger.error(f'exception occurred while inserting file {file}: {e}')
 
 
 
