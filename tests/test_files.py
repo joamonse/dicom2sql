@@ -25,14 +25,18 @@ class TestFiles(unittest.TestCase):
         paths = [Path('test_folder/1/a'), Path('test_folder/1/b'), Path('test_folder/1/c'),
                  Path('test_folder/1/d'), Path('test_folder/1/e'), Path('test_folder/1/f')]
         for generator, test in zip(get_files(Path('test_folder/1')), paths[::-1]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
         for i, _ in enumerate(zip(get_files(Path('test_folder/1')), paths[::-1])):
+            with _[0]:
+                pass
             if i == 3:
                 break
 
         for generator, test in zip(get_files(Path('test_folder/1')), paths[::-1][3:]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
     def test_files_subfolder_folder(self):
         ConfigFile(Path('test_folder/2')).remove()
@@ -42,14 +46,18 @@ class TestFiles(unittest.TestCase):
                  Path('test_folder/2/3/c'), Path('test_folder/2/3/d'), Path('test_folder/2/3/e'),
                  Path('test_folder/2/3/f'), Path('test_folder/2/3/g')]
         for generator, test in zip(get_files(Path('test_folder/2')), paths[::-1]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
         for i, _ in enumerate(zip(get_files(Path('test_folder/2')), paths[::-1])):
+            with _[0]:
+                pass
             if i == 3:
                 break
 
         for generator, test in zip(get_files(Path('test_folder/2')), paths[::-1][3:]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
     def test_unequal_folders(self):
         ConfigFile(Path('test_folder/3')).remove()
@@ -58,14 +66,18 @@ class TestFiles(unittest.TestCase):
                  Path('test_folder/3/c'), Path('test_folder/3/d'), Path('test_folder/3/e'),
                  Path('test_folder/3/f'), Path('test_folder/3/g')]
         for generator, test in zip(get_files(Path('test_folder/3')), paths[::-1]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
         for i, _ in enumerate(zip(get_files(Path('test_folder/3')), paths[::-1])):
+            with _[0]:
+                pass
             if i == 3:
                 break
 
         for generator, test in zip(get_files(Path('test_folder/3')), paths[::-1][3:]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
     def test_full_folders(self):
         ConfigFile(Path('test_folder/')).remove()
@@ -81,13 +93,17 @@ class TestFiles(unittest.TestCase):
                  Path('test_folder/3/c'), Path('test_folder/3/d'), Path('test_folder/3/e'),
                  Path('test_folder/3/f'), Path('test_folder/3/g')]
         for generator, test in zip(get_files(Path('test_folder/')), paths[::-1]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 
         for i, _ in enumerate(zip(get_files(Path('test_folder')), paths[::-1])):
+            with _[0]:
+                pass
             if i == 3:
                 break
 
         for generator, test in zip(get_files(Path('test_folder/')), paths[::-1][3:]):
-            self.assertEqual(test, generator)
+            with generator:
+                self.assertEqual(test, generator.path)
 if __name__ == '__main__':
     unittest.main()
