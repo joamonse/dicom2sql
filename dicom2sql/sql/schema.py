@@ -42,7 +42,7 @@ tags_id: dict = {
         "patient_dicom_id": "00100020",
         "patient_name": "00100010",
         "birth_date": "00100030",
-        "sex": "00100090",
+        "sex": "00100040",
         "age": "00101010",
         "weight": "00101030",
         "study_instance_uid": "0020000D",
