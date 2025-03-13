@@ -9,7 +9,7 @@ from pydicom.errors import InvalidDicomError
 
 from dicom2sql.filesystem.file_lister import get_files_from_list
 from sql.database import Database
-from dicom2sql.filesystem.file_explorer import get_files
+from dicom2sql.filesystem.file_extractor import FileExtractor
 
 import csv
 
@@ -53,8 +53,8 @@ if __name__ == '__main__':
     inputs = list(map(lambda p: Path(p), args.paths))
 
     for path in inputs:
-        file_generator = get_files_from_list(path) if path.is_file() else get_files(path)
-        for file in file_generator:
+        file_extractor = FileExtractor(path)
+        for file in file_extractor.files():
             with file:
                 print(file)
                 try:
