@@ -56,22 +56,14 @@ if __name__ == '__main__':
         file_extractor = FileExtractor(path)
         for file in file_extractor.files():
             with file:
+                file.load()
+                if file.error:
+                    continue
                 print(file)
-                try:
-                    dcm_data = pydicom.dcmread(file.path, stop_before_pixels=True)
-                except InvalidDicomError:
-                    logger.error(f'{file} contains error or is not a dicom')
-                    continue
-                except TypeError:
-                    logger.warning(f'{file} is not dicom')
-                    continue
-                except FileNotFoundError:
-                    logger.warning(f'{file} does not exist')
-                    continue
 
                 community = path
                 try:
-                    db.insert(dcm_data, str(community), str(file.path), project)
+                    db.insert(file.dcm_data, str(community), str(file.path), project)
                 except KeyError as e:
                     logger.error(f'missing tag {e.args[0]} in file {file}')
                 except sqlalchemy.exc.ProgrammingError as e:
