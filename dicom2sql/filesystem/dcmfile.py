@@ -15,6 +15,7 @@ class DcmFile:
         self.dcm_data = None
 
     def load(self):
+        self.loading = True
         try:
             self.dcm_data = pydicom.dcmread(self.path, stop_before_pixels=True)
         except InvalidDicomError:
@@ -28,6 +29,9 @@ class DcmFile:
         except FileNotFoundError:
             logging.getLogger(__name__).warning(f'{self.path} does not exist')
             self.error = True
+
+        self.loading = False
+        self.loaded = True
 
     def __enter__(self):
         pass
