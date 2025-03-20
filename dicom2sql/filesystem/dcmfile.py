@@ -1,18 +1,24 @@
 #Must need to be processed in order to work
+from __future__ import annotations
+
 import logging
+from pathlib import Path
 
 import pydicom
 from pydicom.errors import InvalidDicomError
 
+from dicom2sql.config_file import ConfigFile
+
 
 class DcmFile:
-    def __init__(self, config, path):
+    def __init__(self, config:ConfigFile, path:Path, line_num: int | None=None):
         self.path = path
         self.config = config
         self.loaded = False
         self.loading = False
         self.error = False
         self.dcm_data = None
+        self.line_num=line_num
 
     def load(self):
         self.loading = True
@@ -38,7 +44,10 @@ class DcmFile:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if not exc_type:
-            self.config.set_last_file(self.path)
+            if self.line_num:
+                self.config.set_last_file(self.line_num)
+            else:
+                self.config.set_last_file(self.path)
 
     def __repr__(self):
         return self.path.__repr__()
