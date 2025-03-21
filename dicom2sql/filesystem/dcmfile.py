@@ -25,15 +25,15 @@ class DcmFile:
         try:
             self.dcm_data = pydicom.dcmread(self.path, stop_before_pixels=True)
         except InvalidDicomError:
-            logging.getLogger(__name__).error(f'{self.path} contains error or is not a dicom')
+            logging.getLogger("dicom2sql").error(f'{self.path} contains error or is not a dicom')
             self.error = True
 
         except TypeError:
-            logging.getLogger(__name__).warning(f'{self.path} is not dicom')
+            logging.getLogger("dicom2sql").warning(f'{self.path} is not dicom')
             self.error = True
 
         except FileNotFoundError:
-            logging.getLogger(__name__).warning(f'{self.path} does not exist')
+            logging.getLogger("dicom2sql").warning(f'{self.path} does not exist')
             self.error = True
 
         self.loading = False

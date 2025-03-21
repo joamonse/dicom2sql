@@ -30,7 +30,8 @@ def upload_tags_description(csv_path: str, db: Database):
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', level=logging.WARNING,
                         filename=Path(os.getcwd()) / f'{strftime("%Y-%m-%d_%H-%M-%S", gmtime())}.log', filemode='a')
-    logger = logging.getLogger(__name__)
+    logger = logging.getLogger("dicom2sql")
+    logger.setLevel(logging.ERROR)
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
     parser = argparse.ArgumentParser(description='Run a dicom node that upload recied dicom\'s tags to a mongo database',prog='dicom2mongo')
@@ -56,7 +57,6 @@ if __name__ == '__main__':
         file_extractor = FileExtractor(path)
         for file in file_extractor.files():
             with file:
-                file.load()
                 if file.error:
                     continue
                 print(file)

@@ -1,23 +1,85 @@
+from __future__ import annotations
+
+import logging
 from pathlib import Path
+from time import sleep, perf_counter_ns
 from typing import Generator
+import queue
+import threading
+import concurrent.futures
 
 from dicom2sql.config_file import ConfigFile
 from .dcmfile import DcmFile
 
 
 class FileExtractor:
-    def __init__(self, files_path: Path, preload_files: int=30, parallel_process: int=10):
+    def __init__(self, files_path: Path, preload_files: int=30, workers: int=10):
         self.config_file = ConfigFile(files_path)
         self.file_generator = self._get_files_from_list(files_path) if files_path.is_file() else self._get_files_from_path(files_path)
-        self.actual_file = 0
-        self.max_file = 0
-        self.file_buffer = [None] * preload_files
+        self.max_buffer_size = preload_files
+        self.file_buffer:queue.Queue[tuple[DcmFile,threading.Event]] = queue.Queue(maxsize=preload_files)
+        self.max_workers = workers
+        self.pipeline:queue.Queue[tuple[DcmFile,threading.Event]] = queue.Queue(maxsize=preload_files)
+        self.quit_event = threading.Event()
+        self.files_prepared = threading.Event()
+        self.workers = [threading.Thread(target=self._files_provider, daemon=True)]+[threading.Thread(target=self._load_file, daemon=True) for _ in range(1,self.max_workers)]
+
 
     def files(self) -> Generator[DcmFile, None, None]:
         with self.config_file:
-            for f in self.file_generator:
+            for w in self.workers:
+                w.start()
+
+            time_a = perf_counter_ns()
+            count = 0
+            avg = 0
+            while not self.file_buffer.empty() or not self.files_prepared.is_set():
+                try:
+                    f, loaded_event = self.file_buffer.get(block=False)
+                except queue.Empty:
+                    sleep(0.001)
+                    continue
+
+                loaded_event.wait()
+                logging.getLogger("dicom2sql").info(f'Provided new DICOM. File queue:{self.file_buffer.qsize()}, paths queue: {self.pipeline.qsize()}')
+                time_b = perf_counter_ns()
+                delta = time_b-time_a
+                print(f"Time of getting next dicom: {delta}ns")
+                if count == 0:
+                    count = 1
+                    avg = delta
+                else:
+                    count += 1
+                    avg = avg + (delta-avg)/count
                 yield f
+                time_a = perf_counter_ns()
+
+            print(f"Average Time of getting next DICOM: {avg}ns over {count} DICOMs")
+
+            self.quit_event.set()
             self.config_file.remove()
+
+
+    def _files_provider(self):
+        logging.getLogger("dicom2sql").debug(f'Starting provider thread')
+        for f in self.file_generator:
+            logging.getLogger("dicom2sql").debug(f'getting file {f} in provider')
+            event = threading.Event()
+            self.file_buffer.put((f, event))
+            self.pipeline.put((f, event))
+        logging.getLogger("dicom2sql").debug(f'File exploration done in provider')
+        self.files_prepared.set()
+
+
+    def _load_file(self):
+        logging.getLogger("dicom2sql").debug(f'Starting consumer thread')
+        while not self.quit_event.is_set() or not self.pipeline.empty():
+            job, event = self.pipeline.get()
+            logging.getLogger("dicom2sql").debug(f'Loading file {job} in consumer')
+            job.load()
+            event.set()
+        logging.getLogger("dicom2sql").debug(f'Consumer done')
+
 
     def _get_files_from_list(self, save_file: Path) -> Generator[DcmFile, None, None]:
         with open(save_file) as file_list:
@@ -30,10 +92,11 @@ class FileExtractor:
 
             for line in file_list:
                 path = Path(line.strip())
-                context = DcmFile(self.config_file, path)
+                context = DcmFile(self.config_file, path, last_line)
                 yield context
 
                 last_line += 1
+
 
     def _get_files_from_path(self, root: Path) -> Generator[DcmFile, None, None]:
 
@@ -53,6 +116,7 @@ class FileExtractor:
 
             next_files = sorted(list(current_file.iterdir()), key=str, reverse=True)
             searched_files = next_files + searched_files
+
 
 def _generate_directory_list(last_file: Path, root: Path):
     files = [last_file]
