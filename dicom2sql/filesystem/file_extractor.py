@@ -30,9 +30,6 @@ class FileExtractor:
             for w in self.workers:
                 w.start()
 
-            time_a = perf_counter_ns()
-            count = 0
-            avg = 0
             while not self.file_buffer.empty() or not self.files_prepared.is_set():
                 try:
                     f, loaded_event = self.file_buffer.get(block=False)
@@ -42,19 +39,8 @@ class FileExtractor:
 
                 loaded_event.wait()
                 logging.getLogger("dicom2sql").info(f'Provided new DICOM. File queue:{self.file_buffer.qsize()}, paths queue: {self.pipeline.qsize()}')
-                time_b = perf_counter_ns()
-                delta = time_b-time_a
-                print(f"Time of getting next dicom: {delta}ns")
-                if count == 0:
-                    count = 1
-                    avg = delta
-                else:
-                    count += 1
-                    avg = avg + (delta-avg)/count
-                yield f
-                time_a = perf_counter_ns()
 
-            print(f"Average Time of getting next DICOM: {avg}ns over {count} DICOMs")
+                yield f
 
             self.quit_event.set()
             self.config_file.remove()
