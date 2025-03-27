@@ -1,6 +1,7 @@
 import json
+import traceback
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event, Engine, text, insert
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
@@ -60,22 +61,22 @@ class Database:
             logger.warning(f'File {uri} could not be processed. Accession number or patient id is null')
             return
         with self.session_factory() as session:
+            select_statement = (select(Patient,Study,Series)
+                                .outerjoin(Study, (Patient.id == Study.patient_id) & (Study.accession_number == data[tags_id["accession_number"]].value))
+                                .outerjoin(Series, (Study.id == Series.study_id) & (Series.series_instance_uid == data[tags_id["series_instance_uid"]].value))
+                                .where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value))
 
-            select_statement = select(Patient).where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value)
-            patient = session.execute(select_statement).scalars().first()
+            patient,study,series = session.execute(select_statement).first() or (None, None, None)
+
             if not patient:
                 patient = Patient(data)
                 session.add(patient)
 
-            select_statement = select(Study).where(Study.accession_number == data[tags_id["accession_number"]].value)
-            study = session.execute(select_statement).scalars().first()
             if not study:
                 study = Study(data, community)
                 study.patient = patient
                 session.add(study)
 
-            select_statement = select(Series).where(Series.series_instance_uid == data[tags_id["series_instance_uid"]].value)
-            series = session.execute(select_statement).scalars().first()
             if not series:
                 series = Series(data)
                 series.study = study
@@ -92,6 +93,7 @@ class Database:
             for t in series.tags:
                 existing_tags[t.tag_id].append(t.value)
 
+            tags = []
             for i, tag_to_insert in enumerate(self.searched_tags):
                 if tag_to_insert["tag"] in existing_tags and data[tag_to_insert["tag"]].value in existing_tags[tag_to_insert["tag"]]:
                     continue
@@ -99,12 +101,13 @@ class Database:
                 if tag_to_insert["tag"] not in data:
                     logger.info(f'Tag {tag_to_insert["tag"]} not found in file {uri}')
                     continue
+                tag = {"value": str(data[tag_to_insert["tag"]].value),
+                       "tag_id": tag_to_insert["tag"],
+                       "series_id": series.id}
 
-                tag = Tag(value=str(data[tag_to_insert["tag"]].value))
-                tag.tag_descriptor = tag_to_insert["tag_object"]
-                session.add(tag)
-                series.tags.append(tag)
-                existing_tags[tag_to_insert["tag"]].append(str(data[tag_to_insert["tag"]].value))
+                tags.append(tag)
+
+            session.execute(insert(Tag),tags)
 
             if tags_id["dicom_sr"] in data:
                 json_data = data.to_json_dict()[tags_id["dicom_sr"]]
@@ -137,7 +140,6 @@ class Database:
     @property
     def searched_tags(self) -> List[DicomTagDict]:
         if self._searched_tags is None or self._is_tags_dirty:
-            
             self._searched_tags = self.get_tags_list()
             self._is_tags_dirty = False
         return self._searched_tags
