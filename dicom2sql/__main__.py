@@ -38,7 +38,7 @@ if __name__ == '__main__':
     args = parse_args()
     config = parse_config()
 
-    db = Database(args.db_url)
+    db = Database(config["out_db_uri"])
 
     if args.init_db != '':
         upload_tags_description(args.init_db, db)
