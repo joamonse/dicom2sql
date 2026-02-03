@@ -1,5 +1,6 @@
 import json
 import traceback
+from time import perf_counter_ns
 
 from sqlalchemy import create_engine, event, Engine, text, insert
 from sqlalchemy.orm import sessionmaker
@@ -42,7 +43,7 @@ class Database:
                 or data[tags_id["patient_dicom_id"]].value == ''
                 or data[tags_id["patient_dicom_id"]].value is None
                 )
-
+    #TODO: remove time checks
     def get_or_create_project(self, project_name:str) -> int:
         with self.session_factory() as session:
             session.expire_on_commit = False
@@ -56,18 +57,31 @@ class Database:
             return project.id
 
     def insert(self, data: Dataset, community: str, uri: str, project_id:int=None) -> None:
+        community = community[:25]
         logger = logging.getLogger(__name__)
         if self.check_identifiers(data):
             logger.warning(f'File {uri} could not be processed. Accession number or patient id is null')
             return
+
+        time_a = perf_counter_ns()
         with self.session_factory() as session:
+            time_start = perf_counter_ns()
+            time_b = perf_counter_ns()
+            delta_dicom = time_b - time_a
+            print(f"Time creating session: {delta_dicom}ns")
+
+            time_a = perf_counter_ns()
             select_statement = (select(Patient,Study,Series)
                                 .outerjoin(Study, (Patient.id == Study.patient_id) & (Study.accession_number == data[tags_id["accession_number"]].value))
                                 .outerjoin(Series, (Study.id == Series.study_id) & (Series.series_instance_uid == data[tags_id["series_instance_uid"]].value))
                                 .where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value))
 
             patient,study,series = session.execute(select_statement).first() or (None, None, None)
+            time_b = perf_counter_ns()
+            delta_dicom = time_b - time_a
+            print(f"Time get patient: {delta_dicom}ns")
 
+            time_a = perf_counter_ns()
             if not patient:
                 patient = Patient(data)
                 session.add(patient)
@@ -81,6 +95,10 @@ class Database:
                 series = Series(data)
                 series.study = study
                 session.add(series)
+
+            time_b = perf_counter_ns()
+            delta_dicom = time_b - time_a
+            print(f"Time create subs: {delta_dicom}ns")
 
             if project_id:
                 select_statement = select(Project).where(Project.id == project_id)
@@ -105,6 +123,7 @@ class Database:
                        "tag_id": tag_to_insert["tag"],
                        "series_id": series.id}
 
+
                 tags.append(tag)
 
             session.execute(insert(Tag),tags)
@@ -121,7 +140,16 @@ class Database:
 
             session.add(file)
 
+            time_a = perf_counter_ns()
+
             session.commit()
+
+            time_b = perf_counter_ns()
+            delta_dicom = time_b - time_a
+            print(f"Time commit: {delta_dicom}ns")
+            time_end = perf_counter_ns()
+            delta_dicom = time_end - time_start
+            print(f"Time full: {delta_dicom}ns")
 
     def get_tags_list(self) -> List[DicomTagDict]:
         with self.session_factory() as session:
@@ -144,3 +172,14 @@ class Database:
             self._is_tags_dirty = False
         return self._searched_tags
 
+#TODO: make it more agnostic
+def get_image_paths(db_uri) -> list[(str,str)]:
+    engine = create_engine("db_uri")
+
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT id, path FROM users WHERE age > :age"),
+            {"age": 18}
+        )
+
+        return [(row.id,row.path) for row in result]
