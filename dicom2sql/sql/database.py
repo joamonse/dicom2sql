@@ -2,7 +2,7 @@ import json
 import traceback
 from time import perf_counter_ns
 
-from sqlalchemy import create_engine, event, Engine, text, insert
+from sqlalchemy import create_engine, event, Engine, text, insert, bindparam
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
@@ -43,7 +43,7 @@ class Database:
                 or data[tags_id["patient_dicom_id"]].value == ''
                 or data[tags_id["patient_dicom_id"]].value is None
                 )
-    #TODO: remove time checks
+
     def get_or_create_project(self, project_name:str) -> int:
         with self.session_factory() as session:
             session.expire_on_commit = False
@@ -65,23 +65,16 @@ class Database:
 
         time_a = perf_counter_ns()
         with self.session_factory() as session:
-            time_start = perf_counter_ns()
-            time_b = perf_counter_ns()
-            delta_dicom = time_b - time_a
-            print(f"Time creating session: {delta_dicom}ns")
 
-            time_a = perf_counter_ns()
             select_statement = (select(Patient,Study,Series)
                                 .outerjoin(Study, (Patient.id == Study.patient_id) & (Study.accession_number == data[tags_id["accession_number"]].value))
                                 .outerjoin(Series, (Study.id == Series.study_id) & (Series.series_instance_uid == data[tags_id["series_instance_uid"]].value))
                                 .where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value))
 
             patient,study,series = session.execute(select_statement).first() or (None, None, None)
-            time_b = perf_counter_ns()
-            delta_dicom = time_b - time_a
-            print(f"Time get patient: {delta_dicom}ns")
 
-            time_a = perf_counter_ns()
+
+
             if not patient:
                 patient = Patient(data)
                 session.add(patient)
@@ -96,9 +89,7 @@ class Database:
                 series.study = study
                 session.add(series)
 
-            time_b = perf_counter_ns()
-            delta_dicom = time_b - time_a
-            print(f"Time create subs: {delta_dicom}ns")
+
 
             if project_id:
                 select_statement = select(Project).where(Project.id == project_id)
@@ -140,16 +131,8 @@ class Database:
 
             session.add(file)
 
-            time_a = perf_counter_ns()
 
             session.commit()
-
-            time_b = perf_counter_ns()
-            delta_dicom = time_b - time_a
-            print(f"Time commit: {delta_dicom}ns")
-            time_end = perf_counter_ns()
-            delta_dicom = time_end - time_start
-            print(f"Time full: {delta_dicom}ns")
 
     def get_tags_list(self) -> List[DicomTagDict]:
         with self.session_factory() as session:
@@ -190,7 +173,11 @@ def delete_image_paths(db_uri:str, ids:list) -> None:
     chunks = [ids[i:i + max_size] for i in range(0, len(ids), max_size)]
     with engine.connect() as conn:
         for chunk in chunks:
-            result = conn.execute(
-                text("DELETE FROM new_images WHERE id in :chunk"),
-                {"chunk": ids}
-            )
+
+            print(chunk)
+            t = text("DELETE FROM new_images WHERE id in :chunk")
+            t = t.bindparams(bindparam('chunk', expanding=True))
+            print (t)
+            conn.execute(t, {"chunk": chunk})
+            conn.commit()
+
