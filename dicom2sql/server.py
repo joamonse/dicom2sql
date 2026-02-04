@@ -3,7 +3,7 @@ import argparse
 import configparser
 import os
 import time
-from multiprocessing.dummy import Pool
+from concurrent.futures import ThreadPoolExecutor
 from time import strftime, gmtime, perf_counter_ns
 
 import pydicom
@@ -148,9 +148,9 @@ if __name__ == '__main__':
             time.sleep(1800)
             continue
 
-        results = [process_file(d[1]) for d in data]
-        #with Pool(processes=10) as pool:
-        #    results = pool.imap(process_file, [d[1] for d in data])
+        #results = [process_file(d[1]) for d in data]
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            results = pool.map(process_file, [d[1] for d in data])
 
         fail_run = 0
         total_run = 0
