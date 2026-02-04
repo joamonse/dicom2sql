@@ -125,8 +125,8 @@ class Database:
 
 
                 tags.append(tag)
-
-            session.execute(insert(Tag),tags)
+            if tags:
+                session.execute(insert(Tag),tags)
 
             if tags_id["dicom_sr"] in data:
                 json_data = data.to_json_dict()[tags_id["dicom_sr"]]
@@ -173,13 +173,24 @@ class Database:
         return self._searched_tags
 
 #TODO: make it more agnostic
-def get_image_paths(db_uri) -> list[(str,str)]:
-    engine = create_engine("db_uri")
+def get_image_paths(db_uri:str) -> list[(str,str)]:
+    engine = create_engine(db_uri)
 
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT id, path FROM users WHERE age > :age"),
-            {"age": 18}
+            text("SELECT id, path FROM new_images")
         )
 
         return [(row.id,row.path) for row in result]
+
+
+def delete_image_paths(db_uri:str, ids:list) -> None:
+    engine = create_engine(db_uri)
+    max_size = 1000
+    chunks = [ids[i:i + max_size] for i in range(0, len(ids), max_size)]
+    with engine.connect() as conn:
+        for chunk in chunks:
+            result = conn.execute(
+                text("DELETE FROM new_images WHERE id in :chunk"),
+                {"chunk": ids}
+            )
