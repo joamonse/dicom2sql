@@ -1,20 +1,14 @@
+import csv
 import logging
-import argparse
-import configparser
 import os
+from pathlib import Path
 from time import strftime, gmtime, perf_counter_ns
 
-import pydicom
 import sqlalchemy
-from pydicom.errors import InvalidDicomError
 
+from dicom2sql.filesystem.file_extractor import FileExtractor
 from dicom2sql.shared import parse_args, parse_config
 from sql.database import Database
-from dicom2sql.filesystem.file_extractor import FileExtractor
-
-import csv
-
-from pathlib import Path
 
 
 def upload_tags_description(csv_path: str, db: Database):

@@ -1,7 +1,7 @@
-from dicom2sql.filesystem.file_explorer import get_files, ConfigFile
-
 import unittest
 from pathlib import Path
+
+from dicom2sql.filesystem.file_explorer import get_files, ConfigFile
 
 
 class TestFiles(unittest.TestCase):

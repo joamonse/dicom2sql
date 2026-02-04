@@ -1,18 +1,17 @@
+import datetime
 import logging
 from typing import List, Any
 from typing import Optional
 
+from pydicom.dataset import Dataset
 from sqlalchemy import ForeignKey, Text, Table, Column
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase
-from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import MappedAsDataclass
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
 
-from pydicom.dataset import Dataset
-
-import datetime
 
 # Tutorial https://www.youtube.com/watch?v=Uym2DHnUEno
 # https://github.com/zzzeek/python_web_conf_2023

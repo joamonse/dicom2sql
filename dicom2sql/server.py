@@ -1,26 +1,21 @@
+import csv
 import logging
-import argparse
-import configparser
 import os
+import smtplib
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import date
+from email.message import EmailMessage
+from pathlib import Path
 from time import strftime, gmtime, perf_counter_ns
 
 import pydicom
 import sqlalchemy
 from pydicom.errors import InvalidDicomError
 
-import smtplib
-from email.message import EmailMessage
-from datetime import date
-
-from dicom2sql.shared import parse_args, parse_config
+from dicom2sql.shared import parse_config
 from sql.database import Database, get_image_paths, delete_image_paths
-from dicom2sql.filesystem.file_extractor import FileExtractor
 
-import csv
-
-from pathlib import Path
 
 def send_daily_email(processed_count):
     msg = EmailMessage()

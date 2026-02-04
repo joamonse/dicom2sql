@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from time import sleep, perf_counter_ns
-from typing import Generator
 import queue
 import threading
-import concurrent.futures
+from pathlib import Path
+from time import sleep
+from typing import Generator
 
 from dicom2sql.config_file import ConfigFile
 from .dcmfile import DcmFile

@@ -1,21 +1,16 @@
 import json
-import traceback
-from time import perf_counter_ns
-
-from sqlalchemy import create_engine, event, Engine, text, insert, bindparam
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select
-
-from typing import TypedDict, List, NotRequired
-
-from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report, Project
-
-from pydicom.dataset import Dataset
-
+import logging
 from collections import defaultdict
 from pathlib import Path
+from time import perf_counter_ns
+from typing import TypedDict, List, NotRequired
 
-import logging
+from pydicom.dataset import Dataset
+from sqlalchemy import create_engine, text, insert, bindparam
+from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker
+
+from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report, Project
 
 
 class DicomTagDict(TypedDict):
