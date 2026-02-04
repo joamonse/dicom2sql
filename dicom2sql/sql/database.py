@@ -173,11 +173,8 @@ def delete_image_paths(db_uri:str, ids:list) -> None:
     chunks = [ids[i:i + max_size] for i in range(0, len(ids), max_size)]
     with engine.connect() as conn:
         for chunk in chunks:
-
-            print(chunk)
             t = text("DELETE FROM new_images WHERE id in :chunk")
             t = t.bindparams(bindparam('chunk', expanding=True))
-            print (t)
             conn.execute(t, {"chunk": chunk})
             conn.commit()
 
