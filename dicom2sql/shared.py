@@ -37,6 +37,4 @@ def parse_config() -> dict:
         'in_db_uri': get_db_uri(config['database.in'], os.environ.get('IN_PASSWORD','')),
         'out_db_uri': get_db_uri(config['database.out'], os.environ.get('OUT_PASSWORD',''))
     }
-    print(values)
-
     return values
