@@ -3,14 +3,14 @@ import logging
 from collections import defaultdict
 from pathlib import Path
 from time import perf_counter_ns
-from typing import TypedDict, List, NotRequired
+from typing import TypedDict, List, NotRequired, Tuple, Sequence
 
 from pydicom.dataset import Dataset
-from sqlalchemy import create_engine, text, insert, bindparam
+from sqlalchemy import create_engine, text, insert, bindparam, delete, update, Row
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
-from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report, Project
+from .schema import TagDescriptor, Patient, Study, Series, tags_id, FileInfo, Base, Tag, Report, Project, ImageQueue
 
 
 class DicomTagDict(TypedDict):
@@ -67,7 +67,6 @@ class Database:
                                 .where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value))
 
             patient,study,series = session.execute(select_statement).first() or (None, None, None)
-
 
 
             if not patient:
@@ -149,6 +148,39 @@ class Database:
             self._searched_tags = self.get_tags_list()
             self._is_tags_dirty = False
         return self._searched_tags
+
+
+    def get_new_images(self,limit=1000) -> Sequence[Row[tuple[int, str]]]:
+        with self.session_factory() as sess:
+            stmt = (
+                select(ImageQueue.id, ImageQueue.path)
+                .where(ImageQueue.error.is_(None))
+                .order_by(ImageQueue.insert_date)
+                .limit(limit)
+            )
+
+            return sess.execute(stmt).all()
+
+    def update_new_images(self, status: list) -> tuple[int,int]:
+        with self.session_factory() as sess:
+            delete_ids = [i for i, code in status if code == 0]
+            update_map = [{"id": i, "error": code} for i, code in status if code != 0]
+            print(update_map)
+            print(delete_ids)
+            print(status)
+            if delete_ids:
+                sess.execute(
+                    delete(ImageQueue)
+                    .where(ImageQueue.id.in_(delete_ids))
+                )
+
+            if update_map:
+                sess.execute(
+                    update(ImageQueue),
+                    update_map
+                )
+            sess.commit()
+        return len(delete_ids),len(update_map)
 
 #TODO: make it more agnostic
 def get_image_paths(db_uri:str) -> list[(str,str)]:
