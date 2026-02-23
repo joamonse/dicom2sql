@@ -14,7 +14,7 @@ import sqlalchemy
 from pydicom.errors import InvalidDicomError
 
 from dicom2sql.shared import parse_config
-from sql.database import Database, get_image_paths, delete_image_paths
+from dicom2sql.sql.database import Database, get_image_paths, delete_image_paths
 
 
 def send_daily_email(processed_count):
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     processor = Processor(db_out)
     while True:
         time_a = perf_counter_ns()
-        data = get_image_paths(config["in_db_uri"])
+        data = db_out.get_new_images()
         print(data)
 
         # daily rollover check
@@ -140,22 +140,18 @@ if __name__ == '__main__':
             current_day = date.today()
 
         if not data:
-            time.sleep(1800)
+            time.sleep(10)
             continue
 
         #results = [process_file(d[1]) for d in data]
         with ThreadPoolExecutor(max_workers=10) as pool:
             results = pool.map(process_file, [d[1] for d in data])
 
-        fail_run = 0
-        total_run = 0
-        for idx, error in enumerate(results):
-            if error:
-                fail_run += 1
-            total_run +=1
-        delete_image_paths(config["in_db_uri"], [d[0] for d in data])
+        mapped_results = [(d[0],c) for d,c in zip(data,results)]
+        ok, fail = db_out.update_new_images(mapped_results)
+        #delete_image_paths(config["in_db_uri"], [d[0] for d in data])
 
-        print(f"Completed {total_run} images. Failed {fail_run}. Correct {total_run-fail_run}")
+        print(f"Completed {ok+fail} images. Failed {fail}. Correct {ok}")
         time_b = perf_counter_ns()
         delta_db = time_b - time_a
         print(f"Time of updating db: {delta_db}ns")

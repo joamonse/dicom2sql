@@ -4,7 +4,7 @@ from typing import List, Any
 from typing import Optional
 
 from pydicom.dataset import Dataset
-from sqlalchemy import ForeignKey, Text, Table, Column
+from sqlalchemy import ForeignKey, Text, Table, Column, DateTime, func
 from sqlalchemy import String
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped
@@ -219,6 +219,34 @@ class Project(Base):
     series: Mapped[List["Series"]] = relationship(
         secondary=series_project, back_populates="projects", default_factory=list
     )
+
+    image_queues: Mapped[list["ImageQueue"]] = relationship(
+        back_populates="project", default_factory=list
+    )
+
+class ImageQueue(Base):
+    __tablename__ = "image_queue"
+
+    id: Mapped[int] = mapped_column(primary_key=True, init=False)
+    path: Mapped[str] = mapped_column(String(200), index=True)
+    accession_number: Mapped[str] = mapped_column(String(32), index=True)
+    series_uid: Mapped[str] = mapped_column(String(64), index=True)
+    modality: Mapped[Optional[str]] = mapped_column(String(30))
+    study_date: Mapped[Optional[datetime.date]]
+    insert_date: Mapped[Optional[datetime.date]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    error: Mapped[Optional[int]]
+
+    project_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("project.id"),
+        nullable=True,
+        index=True,
+    )
+
+    project: Mapped[Optional["Project"]] = relationship(
+        back_populates="image_queues"
+    )
+
+
 
 
 
