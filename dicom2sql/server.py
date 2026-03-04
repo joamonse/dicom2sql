@@ -3,7 +3,7 @@ import logging
 import os
 import smtplib
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date
 from email.message import EmailMessage
 from pathlib import Path
@@ -43,40 +43,6 @@ def upload_tags_description(csv_path: str, db: Database):
     db.set_tags_list(rows)
 
 
-class Processor:
-    def __init__(self, db):
-        self.db = db
-
-    def __call__(self, path:str) -> int:
-        error=0
-        try:
-            dcm_data = pydicom.dcmread(path, stop_before_pixels=True)
-        except InvalidDicomError:
-            logging.getLogger("dicom2sql").error(f'{path} contains error or is not a dicom')
-            return 1
-
-        except TypeError:
-            logging.getLogger("dicom2sql").warning(f'{path} is not dicom')
-            return 2
-
-        except FileNotFoundError:
-            logging.getLogger("dicom2sql").warning(f'{path} does not exist')
-            return 3
-
-        community = path
-        try:
-            self.db.insert(dcm_data, str(community), str(path))
-        except KeyError as e:
-            logger.error(f'missing tag {e.args[0]} in file {path}')
-            return 4
-        except sqlalchemy.exc.ProgrammingError as e:
-            logger.error(f'exception occurred while inserting file {path}: {e}')
-            return 5
-        return 0
-
-
-
-
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', level=logging.WARNING,
                         filename=Path(os.getcwd()) / f'{strftime("%Y-%m-%d_%H-%M-%S", gmtime())}.log', filemode='a')
@@ -86,14 +52,14 @@ if __name__ == '__main__':
 
 #    args = parse_args()
     config = parse_config()
-
-    db_out = Database(config["out_db_uri"])
+    print(config['database.out']['out_db_uri'])
+    db_out = Database(config['database.out']['out_db_uri'])
     def process_file(path:str) -> int:
         logging.getLogger("dicom2sql").debug(f'Opening {path}')
         error=0
         try:
             dcm_data = pydicom.dcmread(path, stop_before_pixels=True)
-        except InvalidDicomError:
+        except (InvalidDicomError,):
             logging.getLogger("dicom2sql").error(f'{path} contains error or is not a dicom')
             return 1
 
@@ -101,7 +67,7 @@ if __name__ == '__main__':
             logging.getLogger("dicom2sql").warning(f'{path} is not dicom')
             return 2
 
-        except FileNotFoundError:
+        except (FileNotFoundError , OSError):
             logging.getLogger("dicom2sql").warning(f'{path} does not exist')
             return 3
 
@@ -113,7 +79,7 @@ if __name__ == '__main__':
         except KeyError as e:
             logger.error(f'missing tag {e.args[0]} in file {path}')
             return 4
-        except sqlalchemy.exc.ProgrammingError as e:
+        except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
             logger.error(f'exception occurred while inserting file {path}: {e}')
             return 5
         logging.getLogger("dicom2sql").debug(f'uploading {path} completed')
@@ -127,7 +93,6 @@ if __name__ == '__main__':
     current_day = date.today()
     processed_today = 0
 
-    processor = Processor(db_out)
     while True:
         time_a = perf_counter_ns()
         data = db_out.get_new_images()
@@ -140,16 +105,15 @@ if __name__ == '__main__':
             current_day = date.today()
 
         if not data:
-            time.sleep(10)
+            time.sleep(config["server.wait"]*60)
             continue
 
-        #results = [process_file(d[1]) for d in data]
-        with ThreadPoolExecutor(max_workers=10) as pool:
+        with ThreadPoolExecutor(max_workers=config["server.threads"]) as pool:
             results = pool.map(process_file, [d[1] for d in data])
 
         mapped_results = [(d[0],c) for d,c in zip(data,results)]
         ok, fail = db_out.update_new_images(mapped_results)
-        #delete_image_paths(config["in_db_uri"], [d[0] for d in data])
+        logging.getLogger("dicom2sql").info(f'Completed {ok+fail} images. Failed {fail}. Correct {ok}')
 
         print(f"Completed {ok+fail} images. Failed {fail}. Correct {ok}")
         time_b = perf_counter_ns()

@@ -35,6 +35,6 @@ if __name__ == '__main__':
 
     config = parse_config()
 
-    db_out = Database(config["out_db_uri"])
+    db_out = Database(config['database.out']['out_db_uri'])
 
     upload_tags_description(args.tag_list, db_out)

@@ -20,10 +20,10 @@ def get_db_uri(db_config: configparser.SectionProxy, password:str) -> str:
     if db_config["type"].startswith("sqlite"):
         uri+=f":///{db_config['uri']}"
     else:
-        uri += f"://{urllib.parse.quote_plus(db_config['username'])}:{urllib.parse.quote_plus(password)})@{db_config['uri']}"
+        uri += f"://{urllib.parse.quote_plus(db_config['username'])}:{urllib.parse.quote_plus(password)}@{db_config['uri']}"
         if db_config['port']:
             uri += f":{db_config['port']}"
-        uri += f":{db_config['database']}"
+        uri += f"/{db_config['database']}"
     if db_config['options']:
         uri += f"?{db_config['options']}"
     return uri
@@ -33,8 +33,9 @@ def parse_config() -> dict:
     config = configparser.ConfigParser()
     config.read(["default.ini", "config.ini"])
 
+
     values = {
-        'in_db_uri': get_db_uri(config['database.in'], os.environ.get('IN_PASSWORD','')),
         'out_db_uri': get_db_uri(config['database.out'], os.environ.get('OUT_PASSWORD',''))
     }
-    return values
+    config['database.out']['out_db_uri'] = get_db_uri(config['database.out'], os.environ.get('OUT_PASSWORD',''))
+    return config
