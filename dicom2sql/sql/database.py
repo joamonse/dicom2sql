@@ -137,7 +137,14 @@ class Database:
         tag_list = [t for t in tag_list if not t['tag'] in set(tags_id.items())]
         with self.session_factory() as sess:
             for t in tag_list:
-                tag = TagDescriptor(id=t['tag'], name=t['name'], description=t['tag_description'])
+
+                select_statement = select(TagDescriptor).where(TagDescriptor.id == t['tag'] )
+                tag = sess.execute(select_statement).scalars().first()
+                if not tag:
+                    tag = TagDescriptor(id=t['tag'], name=t['name'], description=t['tag_description'])
+                else:
+                    tag.name= t['name']
+                    tag.description = t['tag_description']
                 sess.add(tag)
             sess.commit()
         self._is_tags_dirty = True
