@@ -210,27 +210,3 @@ class Database:
                 )
             sess.commit()
         return len(delete_ids),len(update_map)
-
-#TODO: make it more agnostic
-def get_image_paths(db_uri:str) -> list[(str,str)]:
-    engine = create_engine(db_uri)
-
-    with engine.connect() as conn:
-        result = conn.execute(
-            text("SELECT id, path FROM new_images")
-        )
-
-        return [(row.id,row.path) for row in result]
-
-
-def delete_image_paths(db_uri:str, ids:list) -> None:
-    engine = create_engine(db_uri)
-    max_size = 1000
-    chunks = [ids[i:i + max_size] for i in range(0, len(ids), max_size)]
-    with engine.connect() as conn:
-        for chunk in chunks:
-            t = text("DELETE FROM new_images WHERE id in :chunk")
-            t = t.bindparams(bindparam('chunk', expanding=True))
-            conn.execute(t, {"chunk": chunk})
-            conn.commit()
-
