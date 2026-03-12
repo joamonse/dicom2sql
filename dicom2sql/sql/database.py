@@ -5,6 +5,7 @@ from pathlib import Path
 from time import perf_counter_ns
 from typing import TypedDict, List, NotRequired, Tuple, Sequence
 
+import sqlalchemy
 from pydicom.dataset import Dataset
 from sqlalchemy import create_engine, text, insert, bindparam, delete, update, Row
 from sqlalchemy import select
@@ -21,8 +22,8 @@ class DicomTagDict(TypedDict):
 
 
 class Database:
-    def __init__(self, url: str):
-        self.engine = create_engine(url)
+    def __init__(self, url: str, pool_size: int=5):
+        self.engine = create_engine(url, pool_size=pool_size)
         self.session_factory = sessionmaker(bind=self.engine)
         self._is_tags_dirty = True
         self._searched_tags = None
@@ -60,30 +61,46 @@ class Database:
 
         time_a = perf_counter_ns()
         with self.session_factory() as session:
+            try:
+                with session.begin_nested():  # savepoint
+                    patient = Patient(data)
+                    session.add(patient)
+                    session.commit()
+            except sqlalchemy.exc.IntegrityError:
+                session.rollback()
+                patient = session.execute(
+                    select(Patient).where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value)
+                ).scalar_one()
 
-            select_statement = (select(Patient,Study,Series)
-                                .outerjoin(Study, (Patient.id == Study.patient_id) & (Study.accession_number == data[tags_id["accession_number"]].value))
-                                .outerjoin(Series, (Study.id == Series.study_id) & (Series.series_instance_uid == data[tags_id["series_instance_uid"]].value))
-                                .where(Patient.patient_dicom_id == data[tags_id["patient_dicom_id"]].value))
+            try:
+                with session.begin_nested():
+                    study = Study(data, community)
+                    study.patient = patient
+                    session.add(study)
+                    session.commit()
+            except sqlalchemy.exc.IntegrityError :
+                session.rollback()
+                study = session.execute(
+                    select(Study).where(
+                        Study.patient_id == patient.id,
+                        Study.accession_number == data[tags_id["accession_number"]].value
+                    )
+                ).scalar_one()
 
-            patient,study,series = session.execute(select_statement).first() or (None, None, None)
-
-
-            if not patient:
-                patient = Patient(data)
-                session.add(patient)
-
-            if not study:
-                study = Study(data, community)
-                study.patient = patient
-                session.add(study)
-
-            if not series:
-                series = Series(data)
-                series.study = study
-                session.add(series)
-
-
+            try:
+                with session.begin_nested():
+                    series = Series(data)
+                    series.study = study
+                    session.add(series)
+                    session.commit()
+            except sqlalchemy.exc.IntegrityError:
+                session.rollback()
+                series = session.execute(
+                    select(Series).where(
+                        Series.study_id == study.id,
+                        Series.series_instance_uid == data[tags_id["series_instance_uid"]].value
+                    )
+                ).scalar_one()
 
             if project_id:
                 select_statement = select(Project).where(Project.id == project_id)
@@ -97,18 +114,19 @@ class Database:
                 existing_tags[t.tag_id].append(t.value)
 
             tags = []
-            for i, tag_to_insert in enumerate(self.searched_tags):
-                if tag_to_insert["tag"] in existing_tags and data[tag_to_insert["tag"]].value in existing_tags[tag_to_insert["tag"]]:
+            for element in data:
+                tag_id = f"{int(element.tag):08X}"
+                if not element.value:
+                    continue
+                if tag_id not in self.searched_tags:
+                    logger.info(f'Tag {tag_id} not found in searched tags')
+                    continue
+                if tag_id in existing_tags and element.value in existing_tags[tag_id]:
                     continue
 
-                if tag_to_insert["tag"] not in data:
-                    logger.info(f'Tag {tag_to_insert["tag"]} not found in file {uri}')
-                    continue
-                tag = {"value": str(data[tag_to_insert["tag"]].value),
-                       "tag_id": tag_to_insert["tag"],
+                tag = {"value": str(element.value)[:Tag.value.type.length],
+                       "tag_id": tag_id,
                        "series_id": series.id}
-
-
                 tags.append(tag)
             if tags:
                 session.execute(insert(Tag),tags)
@@ -125,13 +143,18 @@ class Database:
 
             session.add(file)
 
+            try:
+                session.commit()
+            except sqlalchemy.exc.IntegrityError as e:
+                session.rollback()
+                raise e
 
-            session.commit()
 
-    def get_tags_list(self) -> List[DicomTagDict]:
+    def get_tags_list(self) -> set:
         with self.session_factory() as session:
-            return [{'tag': t.id, 'tag_description': t.description, 'tag_object': t}
-                    for t in session.execute(select(TagDescriptor)).scalars().all()]
+
+            return { t.id.upper()
+                    for t in session.execute(select(TagDescriptor)).scalars().all()}
 
     def set_tags_list(self, tag_list: List[DicomTagDict]) -> None:
         tag_list = [t for t in tag_list if not t['tag'] in set(tags_id.items())]
@@ -150,7 +173,7 @@ class Database:
         self._is_tags_dirty = True
 
     @property
-    def searched_tags(self) -> List[DicomTagDict]:
+    def searched_tags(self) -> set:
         if self._searched_tags is None or self._is_tags_dirty:
             self._searched_tags = self.get_tags_list()
             self._is_tags_dirty = False
@@ -172,9 +195,8 @@ class Database:
         with self.session_factory() as sess:
             delete_ids = [i for i, code in status if code == 0]
             update_map = [{"id": i, "error": code} for i, code in status if code != 0]
-            print(update_map)
-            print(delete_ids)
-            print(status)
+            print(f'update_map = {update_map}')
+            print(f'delete_ids = {delete_ids}')
             if delete_ids:
                 sess.execute(
                     delete(ImageQueue)

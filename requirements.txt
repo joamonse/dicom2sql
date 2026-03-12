@@ -1,4 +1,4 @@
-SQLAlchemy~=2.0.31
-platformdirs~=4.2.2
+SQLAlchemy>=2.0.0
+platformdirs>=4.0.0
 
 pydicom>=2.0.0

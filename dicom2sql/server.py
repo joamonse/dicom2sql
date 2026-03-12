@@ -47,13 +47,13 @@ if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%Y/%m/%d %I:%M:%S %p', level=logging.WARNING,
                         filename=Path(os.getcwd()) / f'{strftime("%Y-%m-%d_%H-%M-%S", gmtime())}.log', filemode='a')
     logger = logging.getLogger("dicom2sql")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.WARNING)
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
 
 #    args = parse_args()
     config = parse_config()
     print(config['database.out']['out_db_uri'])
-    db_out = Database(config['database.out']['out_db_uri'])
+    db_out = Database(config['database.out']['out_db_uri'], pool_size=int(config["server"]["threads"])+1)
     def process_file(path:str) -> int:
         logging.getLogger("dicom2sql").debug(f'Opening {path}')
         error=0
@@ -105,10 +105,10 @@ if __name__ == '__main__':
             current_day = date.today()
 
         if not data:
-            time.sleep(config["server.wait"]*60)
+            time.sleep(int(config["server"]["wait"])*60)
             continue
 
-        with ThreadPoolExecutor(max_workers=config["server.threads"]) as pool:
+        with ThreadPoolExecutor(max_workers=int(config["server"]["threads"])) as pool:
             results = pool.map(process_file, [d[1] for d in data])
 
         mapped_results = [(d[0],c) for d,c in zip(data,results)]
