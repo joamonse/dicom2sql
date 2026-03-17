@@ -1,6 +1,7 @@
 import json
 import logging
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from time import perf_counter_ns
 from typing import TypedDict, List, NotRequired, Tuple, Sequence
@@ -180,11 +181,14 @@ class Database:
         return self._searched_tags
 
 
-    def get_new_images(self,limit=1000) -> Sequence[Row[tuple[int, str]]]:
+    def get_new_images(self,limit:int=1000, wait:int=1, filter_error=None) -> Sequence[Row[tuple[int, str]]]:
+        cutoff = datetime.now() - timedelta(days=wait)
+
         with self.session_factory() as sess:
             stmt = (
                 select(ImageQueue.id, ImageQueue.path)
-                .where(ImageQueue.error.is_(None))
+                .where(ImageQueue.error.is_(filter_error),
+                        ImageQueue.insert_date < cutoff)
                 .order_by(ImageQueue.insert_date)
                 .limit(limit)
             )
@@ -194,7 +198,7 @@ class Database:
     def update_new_images(self, status: list) -> tuple[int,int]:
         with self.session_factory() as sess:
             delete_ids = [i for i, code in status if code == 0]
-            update_map = [{"id": i, "error": code} for i, code in status if code != 0]
+            update_map = [{"id": i, "error": code, "insert_date":datetime.now()} for i, code in status if code != 0]
             print(f'update_map = {update_map}')
             print(f'delete_ids = {delete_ids}')
             if delete_ids:

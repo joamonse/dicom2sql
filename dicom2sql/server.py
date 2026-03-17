@@ -96,6 +96,8 @@ if __name__ == '__main__':
     while True:
         time_a = perf_counter_ns()
         data = db_out.get_new_images()
+        if not data:
+            data = db_out.get_new_images(filter_error=3)
         print(data)
 
         # daily rollover check
