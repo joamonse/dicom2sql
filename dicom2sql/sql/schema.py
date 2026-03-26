@@ -92,7 +92,7 @@ class Patient(Base):
         except ValueError:
             self.birth_date = datetime.datetime.fromtimestamp(0).date()
             logging.getLogger(__name__).error(f"date {dicom[tags_id["birth_date"]].value} is in incorrect format, inserting {self.birth_date} instead")
-        self.sex = str(dicom[tags_id["sex"]].value[0]) if tags_id["sex"] in dicom else None
+        self.sex = str(dicom[tags_id["sex"]].value[:1]) if tags_id["sex"] in dicom else None
         self.age = dicom[tags_id["age"]].value if tags_id["age"] in dicom else None
         self.weight = dicom[tags_id["weight"]].value if tags_id["weight"] in dicom else None
 
