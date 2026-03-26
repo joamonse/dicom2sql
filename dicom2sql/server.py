@@ -10,11 +10,12 @@ from pathlib import Path
 from time import strftime, gmtime, perf_counter_ns
 
 import pydicom
+import pydicom.config
 import sqlalchemy
 from pydicom.errors import InvalidDicomError
 
 from dicom2sql.shared import parse_config
-from dicom2sql.sql.database import Database, get_image_paths, delete_image_paths
+from dicom2sql.sql.database import Database
 
 
 def send_daily_email(processed_count):
@@ -49,6 +50,8 @@ if __name__ == '__main__':
     logger = logging.getLogger("dicom2sql")
     logger.setLevel(logging.WARNING)
     logging.getLogger('sqlalchemy').setLevel(logging.ERROR)
+
+    pydicom.config.convert_wrong_length_to_UN = True
 
 #    args = parse_args()
     config = parse_config()
