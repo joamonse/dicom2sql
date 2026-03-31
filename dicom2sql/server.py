@@ -85,6 +85,9 @@ if __name__ == '__main__':
         except (sqlalchemy.exc.ProgrammingError, sqlalchemy.exc.IntegrityError) as e:
             logger.error(f'exception occurred while inserting file {path}: {e}')
             return 5
+        except sqlalchemy.exc.NoResultFound as e:
+            logger.error(f'Something was not found, probably because a collision happened')
+            return 6
         logging.getLogger("dicom2sql").debug(f'uploading {path} completed')
 
         return 0
