@@ -63,10 +63,9 @@ class Database:
         time_a = perf_counter_ns()
         with self.session_factory() as session:
             try:
-                with session.begin_nested():  # savepoint
-                    patient = Patient(data)
-                    session.add(patient)
-                    session.commit()
+                patient = Patient(data)
+                session.add(patient)
+                session.commit()
             except sqlalchemy.exc.IntegrityError:
                 session.rollback()
                 patient = session.execute(
@@ -74,11 +73,10 @@ class Database:
                 ).scalar_one()
 
             try:
-                with session.begin_nested():
-                    study = Study(data, community)
-                    study.patient = patient
-                    session.add(study)
-                    session.commit()
+                study = Study(data, community)
+                study.patient = patient
+                session.add(study)
+                session.commit()
             except sqlalchemy.exc.IntegrityError :
                 session.rollback()
                 study = session.execute(
@@ -89,11 +87,10 @@ class Database:
                 ).scalar_one()
 
             try:
-                with session.begin_nested():
-                    series = Series(data)
-                    series.study = study
-                    session.add(series)
-                    session.commit()
+                series = Series(data)
+                series.study = study
+                session.add(series)
+                session.commit()
             except sqlalchemy.exc.IntegrityError:
                 session.rollback()
                 series = session.execute(
